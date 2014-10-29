@@ -4,17 +4,7 @@
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
  <script>
 $( document ).ready(function() {
-	//var c = document.getElementById("myCanvas");
-	//var cWidth = c.width;
-	//var cHeight = c.height;
-	//var ctx = c.getContext("2d");
-	
-	//ctx.moveTo(cWidth/3,cHeight/3);
-	//ctx.lineTo(cWidth*2/3,cHeight/3);
-	//ctx.lineTo(cWidth*2/3,cHeight*2/3);
-	//ctx.lineTo(cWidth/3,cHeight*2/3);
-	//ctx.lineTo(cWidth/3,cHeight/3);
-	//ctx.stroke();
+	//placeholder
 });
 function moar(level) {
 	console.log("level: " + level);
@@ -67,18 +57,29 @@ function moar(level) {
 			ctx.rotate(90*Math.PI/180);
 			ctx.translate(-c.width/2, -c.width/2);
 		}
-		document.getElementById("myButton").setAttribute( "onClick","javascript: moar(" + (level + 1) + ");" );
-		
+		document.getElementById("iterate").setAttribute( "onClick","javascript: moar(" + (level + 1) + ");" );
+		w.terminate();
 	}, false);
 	
 	w.postMessage({"x":xCoordinates,"y":yCoordinates,"level":level});
 
 }
-
+function zoom(){
+	var c = document.getElementById("myCanvas");
+	var ctx = c.getContext("2d");
+	ctx.scale(2,2);
+	alert();
+	var imageData = ctx.getImageData(0, 0, c.width, c.height);
+	ctx.clearRect(0, 0, c.width, c.height);
+	ctx.putImageData(imageData, 0, -c.height/4);
+	
+}
 </script> 
 </head>
 <body>
-	<input id="myButton" type="button" value="moar" onclick="moar(0)"></input><br> 
+	<input id="iterate" type="button" value="moar" onclick="moar(0)"></input>
+	<input id="zoom" type="button" value="zoom" onclick="zoom()"></input>
+	<br> 
 <!-- 	<progress id="calcProgress" style="width:400px">Calculate Progress</progress><br>
 	<progress id="drawProgress" style="width:400px">Draw Progress</progress><br> -->
 	<canvas style="border-style:solid;border-width:1px" width="400" height="400" id="myCanvas"></canvas>
