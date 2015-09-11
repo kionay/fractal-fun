@@ -1,13 +1,17 @@
 <!doctype html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
  <script type="text/javascript">
 $( document ).ready(function() {
 	//placeholder
+	window.yCoordinates = [,];
+	window.xCoordinates = [,];
 });
 function moar(level) {
 	console.log("level: " + level);
+
 	$("#myCanvas").remove()
 	$("body").append(
 		$('<canvas></canvas>')
@@ -26,70 +30,169 @@ function moar(level) {
 	var startY = c.height*2/3;
 	var endX = c.width*2/3;
 	var endY = c.width*2/3;
-	var xCoordinates = [startX,endX];
-	var yCoordinates = [startY, endY];
+
+	if(level == -1){
+		window.xCoordinates = [startX,endX];
+		window.yCoordinates = [startY,endY];
+	}
+
 	var Coordinates =[0,1];
 	//first line
+	document.getElementById("depth").innerHTML=level + 1;
+	var currentZoom = document.getElementById("zoomDIV").innerHTML;
+	if(level == -1)
+	{
 	
-	//var calcProgress = document.getElementById("calcProgress");
-	//calcProgress.max = Math.pow(5,level+1);
-	//calcProgress.value = 0;
-	
-	var w = new Worker('ww.js');
-	
-	w.addEventListener('message', function(e) {
-		console.log(e.data);
-		
-		xCoordinates = e.data[0];
-		yCoordinates = e.data[1];
-		//var drawprogress = document.getelementbyid("drawprogress");
-		//drawprogress.max = math.pow(5,level+1);
-		//drawprogress.value = 0;
 		for (var h=0; h<4; h++){
 			ctx.moveTo(startX,startY);
 			ctx.beginPath();
-			for (var k=0; k <xCoordinates.length; k++){
-				ctx.lineTo(xCoordinates[k],yCoordinates[k]);
-				//drawProgress.value += 1
+			for (var k=0; k <window.xCoordinates.length; k++){
+				canvasLineToWithOffset(k, h, currentZoom);
 			}
 			ctx.stroke();
 			ctx.translate(c.width/2, c.width/2);
 			ctx.rotate(90*Math.PI/180);
 			ctx.translate(-c.width/2, -c.width/2);
 		}
+		document.getElementById("coordcount").innerHTML= 4;
 		document.getElementById("iterate").setAttribute( "onClick","javascript: moar(" + (level + 1) + ");" );
+		return 0
+	}
+
+	var w = new Worker('ww.js');
+	
+	w.addEventListener('message', function(e) {
+		console.log(e.data);
+		
+		window.xCoordinates = e.data[0];
+		window.yCoordinates = e.data[1];
+
+
+		document.getElementById("coordcount").innerHTML= ((4 * Math.pow(5,level+1) ) - ((level==0)?(0):(Math.pow(8,level))))
+		document.getElementById("status").innerHTML = "Painting...";
+		
+		for (var h=0; h<4; h++){
+			ctx.moveTo(startX,startY);
+			ctx.beginPath();
+			for (var k=0; k < window.xCoordinates.length; k++){
+				canvasLineToWithOffset(k, h, currentZoom);
+			}
+			ctx.stroke();
+			ctx.translate(c.width/2, c.width/2);    //shift so middle of canvas is at pivot point (top left)
+			ctx.rotate(90*Math.PI/180); 		//rotate 90 degrees on pivot point
+			ctx.translate(-c.width/2, -c.width/2);  //shift back bottom and to the right
+		}
+		document.getElementById("iterate").setAttribute( "onClick","javascript: moar(" + (level + 1) + ");" );
+		document.getElementById("status").innerHTML = "Waiting.";
 		w.terminate();
 	}, false);
 	
-	w.postMessage({"x":xCoordinates,"y":yCoordinates,"level":level});
+	document.getElementById("status").innerHTML = "Calculating...";
+	w.postMessage({"x":window.xCoordinates,"y":window.yCoordinates,"level":0});
+}
 
-}
-function zoom(){
-	var c = document.getElementById("myCanvas");
-	var ctx = c.getContext("2d");
-	ctx.scale(2,2);
-	alert();
-	var imageData = ctx.getImageData(0, 0, c.width, c.height);
-	ctx.clearRect(0, 0, c.width, c.height);
-	ctx.putImageData(imageData, 0, -c.height/4);
-	
-}
 function clearCanvas(){
 	var c = document.getElementById("myCanvas");
 	var ctx = c.getContext("2d");
 	ctx.clearRect(0, 0, c.width, c.height);
-	document.getElementById("iterate").setAttribute( "onClick","javascript: moar(0);" );
+	document.getElementById("iterate").setAttribute( "onClick","javascript: moar(-1);" );
+	document.getElementById("zoom").setAttribute( "onClick","javascript: zoom(2);" );
+	document.getElementById("coordcount").innerHTML= "0";
+	document.getElementById("depth").innerHTML = "-1";
+	document.getElementById("zoomDIV").innerHTML = 1;
+
+}
+
+function zoom(level){
+
+
+	$("#myCanvas").remove()
+	$("body").append(
+		$('<canvas></canvas>')
+		.attr("width","400")
+		.attr("height","400")
+		.attr("id","myCanvas")
+		.css({"border-style":"solid",
+			  "border-width":"1px"
+			  })
+	);
+
+	var c = document.getElementById("myCanvas");
+	var ctx = c.getContext("2d");
+
+
+	var startX = c.width/3;
+	var startY = c.height*2/3;
+
+	document.getElementById("status").innerHTML = "Painting...";
+	for (var h=0; h<4; h++){
+		ctx.moveTo(startX,startY);
+		ctx.beginPath();
+		for (var k=0; k < window.xCoordinates.length; k++){
+			if(h==0){
+				window.xCoordinates[k] += ((window.xCoordinates[k]) - (c.width/2));
+				window.yCoordinates[k] += ((window.yCoordinates[k]) - (c.height/2));
+			}
+			canvasLineToWithOffset(k, h, level);
+		}
+		ctx.stroke(); //paint
+		
+		ctx.translate(c.width/2, c.width/2);    //shift so middle of canvas is at pivot point (top left)
+		ctx.rotate(90*Math.PI/180); 		//rotate 90 degrees on pivot point
+		ctx.translate(-c.width/2, -c.width/2);  //shift back bottom and to the right
+
+	}
+	document.getElementById("zoom").setAttribute( "onClick","javascript: zoom(" + (level * 2) + ");" );
+	document.getElementById("zoomDIV").innerHTML = level;
+	document.getElementById("status").innerHTML = "Waiting.";
+}
+
+function canvasLineToWithOffset(k, h, offsetLevel){
+	var c = document.getElementById("myCanvas");
+	var ctx = c.getContext("2d");
+	if(h==0){
+		ctx.lineTo(window.xCoordinates[k]  ,window.yCoordinates[k] - ((c.height/2)*offsetLevel/1.5) ); //up
+	}
+	if(h==1){
+		ctx.lineTo(window.xCoordinates[k] - ((c.width/2)*offsetLevel/1.5) ,window.yCoordinates[k] ); //left
+	}
+	if(h==2){
+		ctx.lineTo(window.xCoordinates[k] ,window.yCoordinates[k] + ((c.height/2)*offsetLevel/1.5) ); //down
+	}
+	if(h==3){
+		ctx.lineTo(window.xCoordinates[k] + ((c.width/2)*offsetLevel/1.5) ,window.yCoordinates[k] ); //right
+	}
+}
+
+//rotate canvas 90 degrees from center of canvas
+function rotateNinety(context){
+
+
 }
 </script> 
 </head>
-<body>
-	<input id="iterate" type="button" value="moar" onclick="moar(0)"></>
-	<input id="zoom" type="button" value="zoom" onclick="zoom()"></>
-	<input id="clear" type="button" value="clear" onclick="clearCanvas()"></>
-	<br> 
-<!-- 	<progress id="calcProgress" style="width:400px">Calculate Progress</progress><br>
-	<progress id="drawProgress" style="width:400px">Draw Progress</progress><br> -->
-	<canvas style="border-style:solid;border-width:1px" width="400" height="400" id="myCanvas"></canvas>
+<body>	<div style="width:400px">
+		<div>
+			<input id="iterate" type="button" value="moar" onclick="moar(-1)"></>
+			<input id="clear" type="button" value="clear" onclick="clearCanvas()"></>
+			<input id="zoom" type="button" value="zoom" onclick="zoom(2)"></>
+		</div>
+		<div style="top:0; position: absolute; left:15%">
+			<div style="float:left">Status:</div>
+			<div style="float:left" id="status">Waiting.</div>
+		</div>
+		
+		<div style="float: left;">Depth: </div>
+		<div id="depth" style="float: left;">-1</div>
+		<br>
+		<div style="float: left;">Zoom: </div>
+		<div id="zoomDIV" style="float: left;">1</div>x
+		<br>
+		<div style="float: left;">Number of Coordinates: </div>
+		<div id="coordcount" style="float: left;">0</div>
+		<br> 
+		<canvas style="border-style:solid;border-width:1px" width="400" height="400" id="myCanvas"></canvas>
+	</div>
 	
 </body/>
 </html>
