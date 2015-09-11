@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+ <script type="text/javascript">
+$( document ).ready(function() {
+	//placeholder
+});
+function moar(level) {
+	console.log("level: " + level);
+	$("#myCanvas").remove()
+	$("body").append(
+		$('<canvas></canvas>')
+		.attr("width","400")
+		.attr("height","400")
+		.attr("id","myCanvas")
+		.css({"border-style":"solid",
+			  "border-width":"1px"
+			  })
+	);
+
+	var c = document.getElementById("myCanvas");
+	var ctx = c.getContext("2d");
+	
+	var startX = c.width/3;
+	var startY = c.height*2/3;
+	var endX = c.width*2/3;
+	var endY = c.width*2/3;
+	var xCoordinates = [startX,endX];
+	var yCoordinates = [startY, endY];
+	var Coordinates =[0,1];
+	//first line
+	
+	//var calcProgress = document.getElementById("calcProgress");
+	//calcProgress.max = Math.pow(5,level+1);
+	//calcProgress.value = 0;
+	
+	var w = new Worker('ww.js');
+	
+	w.addEventListener('message', function(e) {
+		console.log(e.data);
+		
+		xCoordinates = e.data[0];
+		yCoordinates = e.data[1];
+		//var drawprogress = document.getelementbyid("drawprogress");
+		//drawprogress.max = math.pow(5,level+1);
+		//drawprogress.value = 0;
+		for (var h=0; h<4; h++){
+			ctx.moveTo(startX,startY);
+			ctx.beginPath();
+			for (var k=0; k <xCoordinates.length; k++){
+				ctx.lineTo(xCoordinates[k],yCoordinates[k]);
+				//drawProgress.value += 1
+			}
+			ctx.stroke();
+			ctx.translate(c.width/2, c.width/2);
+			ctx.rotate(90*Math.PI/180);
+			ctx.translate(-c.width/2, -c.width/2);
+		}
+		document.getElementById("iterate").setAttribute( "onClick","javascript: moar(" + (level + 1) + ");" );
+		w.terminate();
+	}, false);
+	
+	w.postMessage({"x":xCoordinates,"y":yCoordinates,"level":level});
+
+}
+function zoom(){
+	var c = document.getElementById("myCanvas");
+	var ctx = c.getContext("2d");
+	ctx.scale(2,2);
+	alert();
+	var imageData = ctx.getImageData(0, 0, c.width, c.height);
+	ctx.clearRect(0, 0, c.width, c.height);
+	ctx.putImageData(imageData, 0, -c.height/4);
+	
+}
+function clearCanvas(){
+	var c = document.getElementById("myCanvas");
+	var ctx = c.getContext("2d");
+	ctx.clearRect(0, 0, c.width, c.height);
+	document.getElementById("iterate").setAttribute( "onClick","javascript: moar(0);" );
+}
+</script> 
+</head>
+<body>
+	<input id="iterate" type="button" value="moar" onclick="moar(0)"></>
+	<input id="zoom" type="button" value="zoom" onclick="zoom()"></>
+	<input id="clear" type="button" value="clear" onclick="clearCanvas()"></>
+	<br> 
+<!-- 	<progress id="calcProgress" style="width:400px">Calculate Progress</progress><br>
+	<progress id="drawProgress" style="width:400px">Draw Progress</progress><br> -->
+	<canvas style="border-style:solid;border-width:1px" width="400" height="400" id="myCanvas"></canvas>
+	
+</body/>
+</html>
